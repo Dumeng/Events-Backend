@@ -1,0 +1,7 @@
+name = Project
+description = Drupal 7 Project Dependency
+core = 7.x
+dependencies[] = PHPExcel
+dependencies[] = date
+dependencies[] = Services
+dependencies[] = Views

@@ -1,0 +1,541 @@
+<?php
+//Deprecated Codes
+
+/*
+function project_menu()
+{
+    $items['event/new']=array(
+        'title'=>'My first page',
+        'access callback'=>TRUE,
+        'page callback'=>'drupal_get_form',
+        'page arguments' => array('_test_form',0),
+    );
+    $items['test']=array(
+        'title'=>'My first page',
+        'access callback'=>TRUE,
+        'page callback'=>'drupal_get_form',
+        'page arguments' => array('event_node_form'),
+    );
+
+    $items['event/%/edit'] = array(
+        'title' => 'My first form',
+        'access callback' => TRUE,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('_test_form',1),
+    );
+
+    return $items;
+}
+
+function _project_event_form()
+{
+    $form = array();
+
+    $form['title'] = array(
+        '#title' => t('Title'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+    );
+
+    $form['summary'] = array(
+        '#title' => t('Summary'),
+        '#type' => 'textarea',
+        '#required' => TRUE,
+    );
+    return $form;
+}
+
+function _project_reg_form()
+{
+    $form = array();
+
+    $form['name'] = array(
+        '#title' => t('Name'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+    );
+
+    $form['phone'] = array(
+        '#title' => t('Phone Number'),
+        '#type' => 'textfield',
+        '#required' => TRUE,
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Submit'),
+        '#submit' => array('_project_reg_form_submit'),
+    );
+
+    $form['#validate'] = array('_project_reg_form_validate');
+    $form['#submit'] = array('_project_reg_form_submit');
+    return $form;
+}
+
+function _project_reg_form_validate($form, &$form_state)
+{
+    if ($form_state['values']['name'] == '') {
+        form_set_error('name', t('You must input a vaild name.'));
+    }
+    if ($form_state['values']['phone'] == '') {
+        form_set_error('password', t('You must select a password.'));
+    }
+}
+
+function _project_reg_form_submit($form, &$form_state)
+{
+    global $user;
+    $node = menu_get_object();
+    $record=array();
+    $record['eid']=$node['nid'];
+    $record['uid']=$user['uid'];
+    $record['name']=$form_state['values']['name'];
+    $record['phone']=$form_state['values']['phone'];
+    drupal_write_record('event_reg', $record);
+}
+
+function _project_event_table()
+{
+    $table=array();
+    $table['header']=array(
+        'No.','Name','Phone',
+    );
+    $table['rows']=array(
+        array('1','2','3'),
+    );
+    return $table;
+}
+
+function project_block_info()
+{
+    $blocks = array();
+    $blocks['event_add'] = array(
+        'info' => t('New Event Link'),
+    );
+    $blocks['events_filter'] = array(
+        'info' => t('Events Filter'),
+    );
+    $blocks['reg_form'] = array(
+        'info' => t('Register Form'),
+    );
+    $blocks['reg_table'] = array(
+        'info' => t('Register Info Table'),
+    );
+    return $blocks;
+}
+
+function project_block_view($delta = '')
+{
+    $block = array();
+    switch ($delta) {
+        case 'reg_form':
+            $block['subject'] = t('Register');
+            $block['content'] = drupal_get_form('_project_reg_form');
+            break;
+        case 'events_filter':
+            $form = array(
+                'type_filter'=>array(
+                    '#type'=>'radios',
+                    '#options'=> array(
+                        0 => 'type 1',
+                        1 => 'type 2',
+                    ),
+                ),
+                'theme_filter'=>array(
+                    '#type'=>'radios',
+                    '#options'=> array(
+                        0 => 'theme 1',
+                        1 => 'theme 2',
+                    ),
+                ),
+            );
+            $block['subject'] = t('Events Filter');
+            $block['content'] = drupal_render($form);
+            break;
+        case 'event_add':
+            $block['content'] = l('New Event', 'node/add/event');
+            break;
+        case 'reg_table':
+            $block['subject'] = 'Register Information';
+
+            $node=menu_get_object();
+            if (empty($node)) {
+                $block=array();
+                break;
+            }
+            $eid=$node->nid;
+
+            $block['content'] = '';
+            if (node_access('update', $node)) {
+                $block['content'] .= l('Download Excel', "project_rest/event/$eid/export");
+            }
+            $table = _project_event_table();
+            global $user;
+            $block['content'] .= l($node->nid, 'node/'.$node->nid).theme('table', $table);
+            break;
+    }
+    return $block;
+}
+*/
+
+function project_services_resources()
+{
+    $service=array();
+    $service['event']=array(
+        'operations'=>array(
+            'retrieve'=>array(
+                'callback'=>'_project_event_retrieve',
+                'args' => array(
+                    array(
+                        'name' => 'eid',
+                        'optional' => FALSE,
+                        'source' => array('path' => 0),
+                        'type' => 'int',
+                    ),
+                ),
+                'access callback' => 'user_access',
+                'access arguments' => array('access content'),
+            ),
+            'create'=>array(
+                'callback'=>'_project_event_create',
+                'args' => array(
+                    array(
+                        'name' => 'event',
+                        'optional' => FALSE,
+                        'source' => 'data',
+                        'type' => 'array',
+                    ),
+                ),
+                'access callback' => 'user_access',
+                'access arguments' => array('create event content'),
+            ),
+            'update'=>array(
+                'callback'=>'_project_event_update',
+                'args' => array(
+                    array(
+                        'name' => 'eid',
+                        'optional' => FALSE,
+                        'source' => array('path' => 0),
+                        'type' => 'int',
+                    ),
+                ),
+                'access callback' => '_project_event_edit_access',
+                'access arguments append' => TRUE,
+            ),
+            'index'=>array(
+                'callback'=>'_project_event_index',
+                'args' => array(
+                    array(
+                        'name' => 'theme',
+                        'optional' => TRUE,
+                        'source' => array('param' => 'theme'),
+                        'default value' => 0,
+                        'type' => 'int',
+                    ),
+                    array(
+                        'name' => 'class',
+                        'optional' => TRUE,
+                        'source' => array('param' => 'class'),
+                        'default value' => 0,
+                        'type' => 'int',
+                    ),
+                ),
+                'access callback' => 'user_access',
+                'access arguments' => array('access content'),
+            ),
+        ),
+        'targeted_actions'=>array(
+            'reg'=>array(
+                'help'=>'Register for an event',
+                'callback'=>'_project_service_event_reg',
+                'args'     => array(
+                    array(
+                      'name' => 'eid',
+                      'optional' => FALSE,
+                      'source' => array('path' => 0),
+                      'type' => 'int',
+                      'description' => 'The eid of the event',
+                    ),
+                    array(
+                      'name' => 'name',
+                      'optional' => FALSE,
+                      'source' => array('data' => 'name'),
+                      'type' => 'int',
+                      'description' => 'The name of register',
+                    ),
+                    array(
+                      'name' => 'phone',
+                      'optional' => FALSE,
+                      'source' => array('data' => 'phone'),
+                      'type' => 'int',
+                      'description' => 'The phone of register',
+                    ),
+                ),
+                'access callback' => 'user_access',
+                'access arguments' => array('post comments'),
+            ),
+            'cancel'=>array(
+                'help'=>'Register for an event',
+                'callback'=>'_project_service_event_reg_cancel',
+                'args'=> array(
+                    array(
+                      'name' => 'eid',
+                      'optional' => FALSE,
+                      'source' => array('path' => 0),
+                      'type' => 'int',
+                      'description' => 'The eid of the event',
+                    ),
+                    array(
+                      'name' => 'rid',
+                      'optional' => FALSE,
+                      'source' => array('path' => 2),
+                      'type' => 'int',
+                      'description' => 'The rid of register will be canceled',
+                    ),
+                ),
+                'access callback' => '_project_event_reg_edit_access',
+                'access arguments append' => true,
+            ),
+        ),
+        'relationships'=>array(
+            'reginfo'=>array(
+                'help'=>'Get register info based user role',
+                'callback'=>'_project_service_event_reg_info',
+                'args'=> array(
+                    array(
+                      'name' => 'eid',
+                      'optional' => FALSE,
+                      'source' => array('path' => 0),
+                      'type' => 'int',
+                      'description' => 'The eid of the event whose reginfo we are getting',
+                    ),
+                ),
+                'access callback' => 'user_access',
+                'access arguments' => array('post comments'),
+            ),
+            'export'=>array(
+                'help'=>'Export register info based user role',
+                'callback'=>'_project_service_event_reg_export',
+                'args'     => array(
+                    array(
+                      'name' => 'eid',
+                      'optional' => FALSE,
+                      'source' => array('path' => 0),
+                      'type' => 'int',
+                      'description' => 'The eid of the event whose reginfo we are getting',
+                    ),
+                ),
+                'access callback' => '_project_event_edit_access',
+                'access arguments append' => true,
+            ),
+        ),
+    );
+    return $service;
+}
+
+function _project_event_edit_access($args=NULL)
+{
+    $access = FALSE;
+    if ($args) {
+        if (node_access('update', node_load($args))) {
+            $access = TRUE;
+        }
+    }
+    return $access;
+}
+
+function _project_event_reg_edit_access($args=NULL)
+{
+    global $user;
+    $access = FALSE;
+    if ($args) {
+        $result = db_select('event_reg')
+            ->fields('uid')
+            ->condition('rid', $args['rid'])
+            ->execute()
+            ->fetchAssoc();
+        if (in_array($user->uid, $result)) {
+            $access = TRUE;
+        }
+    }
+    return $access;
+}
+
+function _project_event_retrieve($eid)
+{
+    $event=node_load($eid);
+    if (empty($event)) {
+        return  services_error(t('Event eid: @eid is not existed.', array('@eid' => $eid)), 406);
+    } else {
+        $image=$event->field_image['und'][0]['uri']?
+            file_create_url($event->field_image['und'][0]['uri']):
+            'http://localhost/drupal7/sites/default/files/styles/large/public/default_images/'.
+            '%E7%AB%A5%E5%B9%B4%E7%9A%84%E8%83%A1%E8%90%9D%E5%8D%9C.jpeg';
+        $response=array(
+            'nid'=>$event->nid,
+            'title'=>$event->title,
+            'body'=>$event->body['und'][0]['value'],
+            'limit'=>$event->field_limit['und'][0]['value'],
+            'time1'=>$event->field_event_time['und'][0]['value'],
+            'time2'=>$event->field_event_time['und'][0]['value2'],
+            'image'=>$image,
+            'access'=>_project_event_edit_access($eid),
+        );
+        return $response;
+    }
+}
+
+function _project_event_index($theme = 0, $class = 0)
+{
+    $nidset = db_select('node')
+        ->fields(NULL, array('nid'))
+        ->condition('type', 'event')
+        ->condition('status', 1)
+        ->execute()
+        ->fetchAll();
+    foreach ($nidset as $nidobj) {
+        $node=node_load($nidobj->nid);
+        if ($theme) {
+            if ($theme!=$node->field_theme['und'][0]['tid']) {
+                continue;
+            }
+        }
+        if ($class) {
+            if ($type!=$node->field_type['und'][0]['tid']) {
+                continue;
+            }
+        }
+        $image=$node->field_image['und'][0]['uri']?
+            file_create_url($node->field_image['und'][0]['uri']):
+            'http://localhost/drupal7/sites/default/files/styles/medium/public/default_images/'.
+            '%E7%AB%A5%E5%B9%B4%E7%9A%84%E8%83%A1%E8%90%9D%E5%8D%9C.jpeg';
+        $nodes[]=array(
+            'nid'=>$node->nid,
+            'title'=>$node->title,
+            'image'=>$image,
+        );
+    }
+    return $nodes;
+}
+
+function _project_event_create($data)
+{
+    global $user;
+
+    $event = new stdClass();
+    $event->title = $data['title'];
+    $event->type = 'event';
+    node_object_prepare($event);
+    $event->language = LANGUAGE_NONE;
+    $event->uid = $user->uid;
+    $event->status = 1;
+    $event->promote = 0;
+    $event->comment = 1;
+
+    // body field
+    $event->body[$event->language][]['value'] = $data['body'];
+
+    // body field
+    $event->field_event_time[$event->language][]['value'] = $data['body'];
+ 
+
+    //$event = node_submit($event); // Prepare node for saving
+    //node_save($event);
+
+    // drupal_set_message( "Event with eid " . $event->nid . " saved!\n");
+    return $data;
+}
+
+function _project_service_event_reg_info($eid)
+{
+    $event=node_load($eid);
+    global $user;
+    if (node_access('update', node_load($eid))) {
+        $uid = $user->uid;
+    } else {
+        $uid='*';
+    }
+        
+    $res = db_select('event_reg')
+            ->fields(NULL, array('rid','name','phone'))
+            ->condition('eid', $eid)
+            //->condition('uid', $eid)
+            ->execute()
+            ->fetchAll();
+    $data = array();
+    foreach ($res as $val) {
+        $data[]=array_values((array)$val);
+    }
+    return $data;
+}
+
+function _project_service_event_reg($eid, $name, $phone)
+{
+    global $user;
+    $event=node_load($eid);
+    if (node_access('update', $event)) {
+        $record=array();
+        $record['eid']=$event->nid;
+        $record['uid']=$user->uid;
+        $record['name']=$name;
+        $record['phone']=$phone;
+        drupal_write_record('event_reg', $record);
+        return;
+    } else {
+        return services_error('Forbidden', 403);
+    }
+    return array('eid'=>$eid,'name'=>$name,'phone'=>$phone,'uid'=>$user->uid);
+}
+
+function _project_service_event_reg_cancel($eid, $rid)
+{
+    db_delete('event_reg')->condition('rid', $rid)->execute();
+    return $rid;
+}
+
+//Export reg info as .xls file for an event
+function _project_service_event_reg_export($eid)
+{
+    module_load_include('inc', 'phpexcel');
+    $wrapper = file_stream_wrapper_get_instance_by_uri('temporary://');
+    $filename = 'Reg-info-download-'.$eid . uniqid() . '.xls';
+    $filepath = $wrapper->realpath() . '/' . $filename;
+    $res = db_select('event_reg')
+            ->fields(NULL, array('rid','name','phone'))
+            ->condition('eid', $eid)
+            ->execute()
+            ->fetchAll();
+    $data = array();
+    foreach ($res as $val) {
+        $data[]=array_values((array)$val);
+    }
+    $result = phpexcel_export(array('rid','Name', 'Phone'), $data, $filepath);
+    $response['error'] = 'Unknown Error';
+    try {
+        if ($result === PHPEXCEL_SUCCESS) {
+            // Exported successfully. Let's register the file with Drupal. We simply
+            // tell Drupal to copy the file over the existing one, by passing in
+            // temporary://$filename.
+            $file = file_save_data(
+              file_get_contents($filepath),
+              "temporary://$filename",
+              FILE_EXISTS_REPLACE
+            );
+          
+            // By default, the file is stored as a permanent file. Let's make it
+            // temporary, so Drupal will remove it (in 6 hours, if your cron is set up
+            // correctly).
+            $file->status = 0;
+            file_save($file);
+            // Start downloading. This requires a hook_file_download() implementation!
+            $headers = file_download_headers($file->uri);
+            file_transfer($file->uri, $headers);
+            $response['error'] = 'success';
+            $response['filename'] = $filename;
+        } else {
+            return services_error(t('Event eid: @eid cannont get a reg info exported file.', array('@eid' => $eid)), 406);
+        }
+    } catch (Exception $e) {
+        return services_error('Unknown Error', 406);
+    }
+}
